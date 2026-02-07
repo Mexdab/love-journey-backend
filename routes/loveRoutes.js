@@ -3,19 +3,24 @@ const router = express.Router();
 
 const {
     createLovePage,
-    getLovePageById,
+    getLovePageBySlug,
     uploadImages
 } = require("../controllers/loveController");
 
 const upload = require("../config/multer");
 
+
 // ✅ Upload photos to Cloudinary
-router.post("/upload-images", upload.array("photos", 10), uploadImages);
+router.post(
+    "/upload-images",
+    upload.array("photos", 10),
+    uploadImages
+);
 
 // ✅ Create love page
 router.post("/create", createLovePage);
 
-// ✅ Get love page by ID
-router.get("/:id", getLovePageById);
+// ✅ Get love page by SLUG (shareable link)
+router.get("/:slug", getLovePageBySlug);
 
 module.exports = router;

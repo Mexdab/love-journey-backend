@@ -2,25 +2,29 @@ const mongoose = require("mongoose");
 const LovePage = require("../models/LovePage");
 const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
+const { nanoid } = require("nanoid");
 
 
 // ❤️ UPLOAD IMAGES TO CLOUDINARY
 exports.uploadImages = async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ success: false, message: "No files uploaded" });
+            return res.status(400).json({
+                success: false,
+                message: "No files uploaded"
+            });
         }
 
         const uploadToCloudinary = (buffer) => {
             return new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
+                const uploadStream = cloudinary.uploader.upload_stream(
                     { folder: "valentine" },
                     (error, result) => {
                         if (error) reject(error);
                         else resolve(result);
                     }
                 );
-                streamifier.createReadStream(buffer).pipe(stream);
+                streamifier.createReadStream(buffer).pipe(uploadStream);
             });
         };
 
@@ -31,11 +35,17 @@ exports.uploadImages = async (req, res) => {
             uploadedImages.push(result.secure_url);
         }
 
-        res.json({ success: true, photos: uploadedImages });
+        res.json({
+            success: true,
+            photos: uploadedImages
+        });
 
     } catch (error) {
         console.error("UPLOAD ERROR:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 };
 
@@ -52,15 +62,20 @@ exports.createLovePage = async (req, res) => {
             firstMeeting,
             favoriteMemory,
             message,
-            photos,
-            music,
-            theme
+            photos = [],
+            music = null,
+            theme = "default"
         } = req.body;
 
+        // 🔗 Generate short, shareable slug
+        const slug = nanoid(7);
+
+        // ⏳ Expiry (7 days)
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
 
         const newPage = await LovePage.create({
+            slug,
             yourGender,
             yourName,
             partnerGender,
@@ -76,35 +91,45 @@ exports.createLovePage = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            id: newPage._id,
+            slug: newPage.slug,
             message: "Love page created successfully"
         });
 
     } catch (error) {
         console.error("CREATE ERROR:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 };
 
 
 
-// 💖 GET LOVE PAGE BY ID
-exports.getLovePageById = async (req, res) => {
+// 💖 GET LOVE PAGE BY SLUG
+exports.getLovePageBySlug = async (req, res) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({ success: false, message: "Invalid page ID" });
-        }
+        const { slug } = req.params;
 
-        const page = await LovePage.findById(req.params.id);
+        const page = await LovePage.findOne({ slug });
 
         if (!page) {
-            return res.status(404).json({ success: false, message: "Love page not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Love page not found"
+            });
         }
 
-        res.json({ success: true, data: page });
+        res.json({
+            success: true,
+            data: page
+        });
 
     } catch (error) {
         console.error("GET ERROR:", error);
-        res.status(500).json({ success: false, error: "Server error" });
+        res.status(500).json({
+            success: false,
+            error: "Server error"
+        });
     }
 };
