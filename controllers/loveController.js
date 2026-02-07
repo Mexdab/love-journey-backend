@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const LovePage = require("../models/LovePage");
 const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
 
 
 // ❤️ UPLOAD IMAGES TO CLOUDINARY
@@ -10,13 +11,23 @@ exports.uploadImages = async (req, res) => {
             return res.status(400).json({ success: false, message: "No files uploaded" });
         }
 
+        const uploadToCloudinary = (buffer) => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { folder: "valentine" },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                streamifier.createReadStream(buffer).pipe(stream);
+            });
+        };
+
         const uploadedImages = [];
 
         for (const file of req.files) {
-            const result = await cloudinary.uploader.upload(file.path, {
-                folder: "valentine"
-            });
-
+            const result = await uploadToCloudinary(file.buffer);
             uploadedImages.push(result.secure_url);
         }
 
