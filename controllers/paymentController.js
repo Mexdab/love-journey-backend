@@ -9,23 +9,20 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// 💰 FIXED PRICE (₹20)
-const AMOUNT_IN_PAISE = 2000; // 20 * 100
+const AMOUNT_IN_PAISE = 2000; // ₹20
 const CURRENCY = "INR";
 
-// 1️⃣ CREATE RAZORPAY ORDER
+// 1️⃣ CREATE ORDER
 exports.createOrder = async (req, res) => {
     try {
         const order = await razorpay.orders.create({
             amount: AMOUNT_IN_PAISE,
             currency: CURRENCY,
-            receipt: `receipt_${Date.now()}`
+            receipt: `receipt_${Date.now()}`,
+            notes: { purpose: "Love Journey Page" }
         });
 
-        res.json({
-            success: true,
-            order
-        });
+        res.json({ success: true, order });
 
     } catch (error) {
         console.error("ORDER ERROR:", error);
@@ -43,16 +40,10 @@ exports.verifyPayment = async (req, res) => {
             formData
         } = req.body;
 
-        if (
-            !razorpay_payment_id ||
-            !razorpay_order_id ||
-            !razorpay_signature ||
-            !formData
-        ) {
+        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !formData) {
             return res.status(400).json({ success: false, message: "Invalid payload" });
         }
 
-        // 🔐 Signature verification
         const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -62,14 +53,41 @@ exports.verifyPayment = async (req, res) => {
             return res.status(401).json({ success: false, message: "Payment verification failed" });
         }
 
-        // ✅ PAYMENT VERIFIED — CREATE LOVE PAGE
-        const slug = nanoid(7);
+        // Generate unique slug
+        let slug;
+        let exists = true;
+        while (exists) {
+            slug = nanoid(7);
+            exists = await LovePage.exists({ slug });
+        }
 
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
 
+        const {
+            yourGender,
+            yourName,
+            partnerGender,
+            partnerName,
+            firstMeeting,
+            favoriteMemory,
+            message,
+            photos,
+            music,
+            theme
+        } = formData;
+
         const lovePage = await LovePage.create({
-            ...formData,
+            yourGender,
+            yourName,
+            partnerGender,
+            partnerName,
+            firstMeeting,
+            favoriteMemory,
+            message,
+            photos,
+            music,
+            theme,
             slug,
             isPaid: true,
             expiresAt
