@@ -14,7 +14,6 @@ connectDB();
 
 // Routes
 app.use("/api/love", require("./routes/loveRoutes"));
-app.use("/api/payment", require("./routes/paymentRoutes")); // 💳 Razorpay backend
 
 // Health check
 app.get("/", (req, res) => {
