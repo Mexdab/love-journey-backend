@@ -7,7 +7,7 @@ const {
     uploadImages
 } = require("../controllers/loveController");
 
-const upload = require("../config/multer");
+const upload = require("../config/multer"); // Ensure this path is correct
 
 
 // ✅ Upload photos to Cloudinary
@@ -17,8 +17,8 @@ router.post(
     uploadImages
 );
 
-// ✅ Create love page
-router.post("/create", createLovePage);
+// ✅ FIX: Change "/create" to "/create-page" to match Frontend
+router.post("/create-page", createLovePage);
 
 // ✅ Get love page by SLUG (shareable link)
 router.get("/:slug", getLovePageBySlug);
